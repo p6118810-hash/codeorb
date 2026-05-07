@@ -12,6 +12,8 @@
 **/.setting.zhd/
 .claude/
 **/.claude/
+.vercel/
+**/.vercel/
 *.log
 
 # Environment and secret material
