@@ -1,8 +1,7 @@
 import type { Locale, SiteCopy } from "@/lib/i18n";
 import type { InnerPageContent } from "@/lib/site-pages";
 import { SiteFooter, SiteHeader } from "@/components/site-shell";
-
-const DOWNLOAD_URL = "https://dl.vibeisland.app/VibeIsland.dmg";
+import { APPCAST_URL, DOWNLOAD_URL, RELEASE_NOTES_URL } from "@/lib/download-links";
 
 export function DownloadPage({
   copy,
@@ -14,9 +13,12 @@ export function DownloadPage({
   content: InnerPageContent;
 }) {
   const helperText =
-    locale === "zh" ? "先下载试用，再查看完整功能说明。" : "Start with the download, then review the full product details.";
+    locale === "zh"
+      ? "先下载，再查看更新日志和发布说明。"
+      : "Download first, then review the appcast and release notes.";
 
-  const secondaryCta = locale === "zh" ? "查看详情" : "View details";
+  const secondaryCta = locale === "zh" ? "查看更新说明" : "View release notes";
+  const tertiaryCta = locale === "zh" ? "查看订阅源" : "View appcast";
 
   return (
     <main className="vi-page">
@@ -32,10 +34,13 @@ export function DownloadPage({
             <a className="vi-cta-primary" href={DOWNLOAD_URL}>
               {copy.hero.primaryCta}
             </a>
-            <a className="vi-cta-secondary" href={`/${locale}/faq`}>
+            <a className="vi-cta-secondary" href={RELEASE_NOTES_URL}>
               {secondaryCta}
             </a>
           </div>
+          <a className="vi-download-helper-link" href={APPCAST_URL}>
+            {tertiaryCta}
+          </a>
           <p className="vi-download-helper">{helperText}</p>
         </div>
       </section>

@@ -12,6 +12,8 @@ import {
   type Locale,
   type SiteCopy,
 } from "@/lib/i18n";
+import { CodeOrbIcon } from "@/components/code-orb-icon";
+import { DOWNLOAD_URL } from "@/lib/download-links";
 
 type HeroWord = {
   label: string;
@@ -873,11 +875,7 @@ function Header({
     <header className="vi-header">
       <div className="vi-nav-shell">
         <a href="#top" className="vi-brand">
-          <img
-            src="https://ext.same-assets.com/2389589190/2261140702.png"
-            alt="Code Orb"
-            className="vi-brand-icon"
-          />
+          <CodeOrbIcon className="vi-brand-icon" />
           <span className="vi-brand-text">CODE ORB</span>
         </a>
 
@@ -996,7 +994,7 @@ function DownloadSection({ copy }: { copy: SiteCopy }) {
             <div className="vi-pricing-title">{copy.downloadSection.title}</div>
             <div className="vi-pricing-badge">{copy.downloadSection.badge}</div>
           </div>
-          <img src="https://ext.same-assets.com/2389589190/2261140702.png" alt="Code Orb" />
+          <CodeOrbIcon className="vi-download-icon" />
         </div>
 
         <ul className="vi-pricing-list">
@@ -1008,7 +1006,7 @@ function DownloadSection({ copy }: { copy: SiteCopy }) {
           ))}
         </ul>
 
-        <a className="vi-buy-button" href="https://dl.vibeisland.app/VibeIsland.dmg">
+        <a className="vi-buy-button" href={DOWNLOAD_URL}>
           {copy.downloadSection.primaryCta}
         </a>
         <Link className="vi-trial-link" href="/faq">

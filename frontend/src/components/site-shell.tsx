@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { LOCALE_COOKIE_NAME, LOCALES, type Locale, type SiteCopy } from "@/lib/i18n";
+import { CodeOrbIcon } from "@/components/code-orb-icon";
 
 export function SiteHeader({
   copy,
@@ -33,11 +34,7 @@ export function SiteHeader({
     <header className="vi-header">
       <div className="vi-nav-shell">
         <a href={`/${locale}`} className="vi-brand">
-          <img
-            src="https://ext.same-assets.com/2389589190/2261140702.png"
-            alt="Code Orb"
-            className="vi-brand-icon"
-          />
+          <CodeOrbIcon className="vi-brand-icon" />
           <span className="vi-brand-text">CODE ORB</span>
         </a>
 

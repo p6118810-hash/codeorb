@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: SITE_COPY[DEFAULT_LOCALE].metadata.title,
   description: SITE_COPY[DEFAULT_LOCALE].metadata.description,
   icons: {
-    icon: "https://ext.same-assets.com/2389589190/2261140702.png",
+    icon: "/code-orb-icon.svg",
   },
 };
 
