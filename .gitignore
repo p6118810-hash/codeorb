@@ -1,0 +1,51 @@
+# OS and editor files
+.DS_Store
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# Local tool state and logs
+.setting.zhd/
+**/.setting.zhd/
+*.log
+
+# Environment and secret material
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.mobileprovision
+
+# Node / frontend / backend outputs
+node_modules/
+coverage/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Xcode / Swift outputs
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+Packages/
+Package.resolved
+Pods/
+
+# Release and signing artifacts
+releases/
+.sparkle-keys/
+*.dmg
+*.zip
