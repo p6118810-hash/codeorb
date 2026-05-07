@@ -10,6 +10,8 @@
 # Local tool state and logs
 .setting.zhd/
 **/.setting.zhd/
+.claude/
+**/.claude/
 *.log
 
 # Environment and secret material
