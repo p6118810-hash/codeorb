@@ -1,3 +1,13 @@
-export const DOWNLOAD_URL = "https://downloads.codeorb.app/codeorb/CodeOrb-0.9.0-1-20260507-231744.dmg";
-export const APPCAST_URL = "https://downloads.codeorb.app/codeorb/appcast.xml";
-export const RELEASE_NOTES_URL = "https://downloads.codeorb.app/codeorb/CodeOrb-0.9.0-1-20260507-231744.html";
+const DEFAULT_DOWNLOADS_BASE_URL = "https://downloads.codeorb.app/codeorb";
+const DEFAULT_RELEASE_SLUG = "CodeOrb-0.9.0-1-20260507-231744";
+
+const DOWNLOADS_BASE_URL = process.env.NEXT_PUBLIC_CODEORB_DOWNLOADS_BASE_URL ?? DEFAULT_DOWNLOADS_BASE_URL;
+const RELEASE_SLUG = process.env.NEXT_PUBLIC_CODEORB_RELEASE_SLUG ?? DEFAULT_RELEASE_SLUG;
+
+export const DOWNLOAD_URL =
+  process.env.NEXT_PUBLIC_CODEORB_DOWNLOAD_URL ?? `${DOWNLOADS_BASE_URL}/${RELEASE_SLUG}.dmg`;
+
+export const APPCAST_URL = process.env.NEXT_PUBLIC_CODEORB_APPCAST_URL ?? `${DOWNLOADS_BASE_URL}/appcast.xml`;
+
+export const RELEASE_NOTES_URL =
+  process.env.NEXT_PUBLIC_CODEORB_RELEASE_NOTES_URL ?? `${DOWNLOADS_BASE_URL}/${RELEASE_SLUG}.html`;

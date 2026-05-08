@@ -73,9 +73,7 @@ export function SiteFooter({
   return (
     <footer className="vi-footer">
       <div className="vi-footer-inner">
-        <p>
-          © 2026 Code Orb · <a href="https://x.com/edwardluox">Edward Luo</a>
-        </p>
+        <p>© 2026 Code Orb</p>
         <div className="vi-footer-links">
           <a href={`/${locale}/faq`}>{copy.footer.faq}</a>
           <a href={`/${locale}/compare`}>{copy.footer.compare}</a>

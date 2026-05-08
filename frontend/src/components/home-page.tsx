@@ -2,7 +2,7 @@
 
 import { ChevronRight, Crosshair, Minus, MessageSquare, SlidersHorizontal, Trash2, X } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LOCALE_COOKIE_NAME,
@@ -233,35 +233,39 @@ function DemoSection({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
     jumpTargetRef.current = activeJumpTarget;
   }, [activeJumpTarget]);
 
+  const measureJumpCursor = useCallback(() => {
+    const stage = jumpStageRef.current;
+    const targetButton = jumpButtonRefs.current[jumpTargetRef.current];
+    if (!stage || !targetButton) return;
+
+    const stageRect = stage.getBoundingClientRect();
+    const iconRect = targetButton.querySelector("svg")?.getBoundingClientRect();
+    const targetRect = iconRect ?? targetButton.getBoundingClientRect();
+
+    setJumpCursorPosition({
+      left: targetRect.left - stageRect.left + targetRect.width / 2,
+      top: targetRect.top - stageRect.top + targetRect.height / 2,
+    });
+    setJumpCursorReady(true);
+  }, []);
+
   useLayoutEffect(() => {
     if (activeScene !== "jump") {
       setJumpCursorReady(false);
       return;
     }
 
-    const measureCursor = () => {
-      const stage = jumpStageRef.current;
-      const targetButton = jumpButtonRefs.current[activeJumpTarget];
-      if (!stage || !targetButton) return;
-
-      const stageRect = stage.getBoundingClientRect();
-      const buttonRect = targetButton.getBoundingClientRect();
-      setJumpCursorPosition({
-        left: buttonRect.left - stageRect.left + buttonRect.width / 2,
-        top: buttonRect.top - stageRect.top + buttonRect.height / 2,
-      });
-      setJumpCursorReady(true);
-    };
-
     setJumpCursorReady(false);
 
     let firstFrame = 0;
     let secondFrame = 0;
+    let settleTimer = 0;
     firstFrame = window.requestAnimationFrame(() => {
-      secondFrame = window.requestAnimationFrame(measureCursor);
+      secondFrame = window.requestAnimationFrame(measureJumpCursor);
     });
+    settleTimer = window.setTimeout(measureJumpCursor, 180);
 
-    const resizeObserver = new ResizeObserver(measureCursor);
+    const resizeObserver = new ResizeObserver(measureJumpCursor);
     if (jumpStageRef.current) {
       resizeObserver.observe(jumpStageRef.current);
     }
@@ -269,15 +273,16 @@ function DemoSection({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
       if (button) resizeObserver.observe(button);
     });
 
-    window.addEventListener("resize", measureCursor);
+    window.addEventListener("resize", measureJumpCursor);
 
     return () => {
       window.cancelAnimationFrame(firstFrame);
       window.cancelAnimationFrame(secondFrame);
+      window.clearTimeout(settleTimer);
       resizeObserver.disconnect();
-      window.removeEventListener("resize", measureCursor);
+      window.removeEventListener("resize", measureJumpCursor);
     };
-  }, [activeScene, activeJumpTarget]);
+  }, [activeScene, activeJumpTarget, measureJumpCursor]);
 
   useEffect(() => {
     if (reducedMotion || activeScene !== "jump") return;
@@ -290,10 +295,11 @@ function DemoSection({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
       jumpTargetRef.current = nextTarget;
       setActiveJumpTarget(nextTarget);
       setJumpPulse((prev) => prev + 1);
+      window.requestAnimationFrame(measureJumpCursor);
     }, 2000);
 
     return () => window.clearInterval(id);
-  }, [activeScene, reducedMotion]);
+  }, [activeScene, measureJumpCursor, reducedMotion]);
 
   const sceneCopy = copy.demo.sceneCopy[activeScene];
 
@@ -1021,9 +1027,7 @@ function Footer({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
   return (
     <footer className="vi-footer">
       <div className="vi-footer-inner">
-        <p>
-          © 2026 Code Orb · <a href="https://x.com/edwardluox">Edward Luo</a>
-        </p>
+        <p>© 2026 Code Orb</p>
         <div className="vi-footer-links">
           <a href={`/${locale}/faq`}>{copy.footer.faq}</a>
           <a href={`/${locale}/compare`}>{copy.footer.compare}</a>

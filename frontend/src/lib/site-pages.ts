@@ -24,7 +24,7 @@ export const INNER_PAGE_COPY: Record<Locale, Record<InnerPageKey, InnerPageConte
       description: "Track the latest product updates, UX refinements, localization work, and workflow improvements in Code Orb.",
       eyebrow: "Product Updates",
       intro: "A running log of what shipped in Code Orb, with a focus on agent workflow, desktop UX, and local-first productivity.",
-      updatedAt: "Updated April 23, 2026",
+      updatedAt: "Updated May 7, 2026",
       sections: [
         {
           heading: "April 2026 - Brand and site refresh",
@@ -55,7 +55,7 @@ export const INNER_PAGE_COPY: Record<Locale, Record<InnerPageKey, InnerPageConte
       description: "Answers to the most common questions about Code Orb, including compatibility, permissions, and local-first workflows.",
       eyebrow: "FAQ",
       intro: "A dedicated FAQ page for search and quick scanning. It covers product fit, supported tools, data handling, and setup expectations.",
-      updatedAt: "Updated April 23, 2026",
+      updatedAt: "Updated May 7, 2026",
       sections: [],
     },
     compare: {
@@ -63,7 +63,7 @@ export const INNER_PAGE_COPY: Record<Locale, Record<InnerPageKey, InnerPageConte
       description: "See how Code Orb differs from simple notifier utilities and other AI coding overlays.",
       eyebrow: "Compare",
       intro: "Code Orb is designed as a working surface for AI coding agents, not just a passive notification layer.",
-      updatedAt: "Updated April 23, 2026",
+      updatedAt: "Updated May 7, 2026",
       sections: [
         {
           heading: "Beyond notifications",
@@ -96,7 +96,7 @@ export const INNER_PAGE_COPY: Record<Locale, Record<InnerPageKey, InnerPageConte
       description: "Download the Code Orb trial for macOS and review the current install path, product fit, and system expectations.",
       eyebrow: "Download",
       intro: "Get the current macOS build of Code Orb and review the quickest path to evaluate the floating-orb workflow for AI coding agents.",
-      updatedAt: "Updated April 23, 2026",
+      updatedAt: "Updated May 7, 2026",
       sections: [
         {
           heading: "Direct download",
@@ -128,7 +128,7 @@ export const INNER_PAGE_COPY: Record<Locale, Record<InnerPageKey, InnerPageConte
       description: "Read how Code Orb handles local session data, terminal metadata, and site analytics expectations.",
       eyebrow: "Privacy",
       intro: "Code Orb is designed around a local-first product philosophy. This page summarizes the practical expectations for the current website and app experience.",
-      updatedAt: "Updated April 23, 2026",
+      updatedAt: "Updated May 7, 2026",
       sections: [
         {
           heading: "Product data",
@@ -151,7 +151,7 @@ export const INNER_PAGE_COPY: Record<Locale, Record<InnerPageKey, InnerPageConte
       description: "Basic usage terms for accessing the Code Orb website, trial downloads, and software licensing flows.",
       eyebrow: "Terms",
       intro: "These terms are a practical placeholder for the current product and site while the commercial and legal copy is still being refined.",
-      updatedAt: "Updated April 23, 2026",
+      updatedAt: "Updated May 7, 2026",
       sections: [
         {
           heading: "Website and download access",
@@ -182,7 +182,7 @@ export const INNER_PAGE_COPY: Record<Locale, Record<InnerPageKey, InnerPageConte
       description: "查看 Code Orb 最近的产品更新、交互优化、多语言改造与工作流改进。",
       eyebrow: "产品更新",
       intro: "这里记录 Code Orb 已发布的重要变化，重点关注 agent 工作流、桌面交互和 local-first 体验。",
-      updatedAt: "更新于 2026 年 4 月 23 日",
+      updatedAt: "更新于 2026 年 5 月 7 日",
       sections: [
         {
           heading: "2026 年 4 月 - 品牌与官网更新",
@@ -213,7 +213,7 @@ export const INNER_PAGE_COPY: Record<Locale, Record<InnerPageKey, InnerPageConte
       description: "集中回答关于 Code Orb 的常见问题，包括兼容性、权限审批与 local-first 工作流。",
       eyebrow: "FAQ",
       intro: "这是一个更适合搜索和快速阅读的 FAQ 独立页面，覆盖产品定位、支持工具、数据处理和接入方式。",
-      updatedAt: "更新于 2026 年 4 月 23 日",
+      updatedAt: "更新于 2026 年 5 月 7 日",
       sections: [],
     },
     compare: {
@@ -221,7 +221,7 @@ export const INNER_PAGE_COPY: Record<Locale, Record<InnerPageKey, InnerPageConte
       description: "看看 Code Orb 与普通通知工具、其他 AI 编码浮层工具的差异。",
       eyebrow: "产品对比",
       intro: "Code Orb 不只是一个被动提醒层，而是为 AI 编码 agent 设计的工作界面。",
-      updatedAt: "更新于 2026 年 4 月 23 日",
+      updatedAt: "更新于 2026 年 5 月 7 日",
       sections: [
         {
           heading: "不只是通知提醒",
@@ -254,7 +254,7 @@ export const INNER_PAGE_COPY: Record<Locale, Record<InnerPageKey, InnerPageConte
       description: "下载 Code Orb 的 macOS 试用版，并快速了解当前安装方式、产品适用场景与系统预期。",
       eyebrow: "下载",
       intro: "获取当前可用的 Code Orb macOS 构建，并快速判断这套 AI 编码助手悬浮球工作流是否适合你的团队或个人场景。",
-      updatedAt: "更新于 2026 年 4 月 23 日",
+      updatedAt: "更新于 2026 年 5 月 7 日",
       sections: [
         {
           heading: "直接下载",
@@ -286,7 +286,7 @@ export const INNER_PAGE_COPY: Record<Locale, Record<InnerPageKey, InnerPageConte
       description: "了解 Code Orb 如何处理本地会话数据、终端元数据以及网站相关信息。",
       eyebrow: "隐私",
       intro: "Code Orb 围绕 local-first 产品哲学设计。这里先用清晰、实用的方式说明当前网站和应用的隐私边界。",
-      updatedAt: "更新于 2026 年 4 月 23 日",
+      updatedAt: "更新于 2026 年 5 月 7 日",
       sections: [
         {
           heading: "产品数据",
@@ -309,7 +309,7 @@ export const INNER_PAGE_COPY: Record<Locale, Record<InnerPageKey, InnerPageConte
       description: "适用于 Code Orb 网站访问、试用版下载以及软件授权流程的基础使用条款。",
       eyebrow: "条款",
       intro: "在商业与法律文案进一步完善前，这里先提供一版清晰实用的基础条款说明。",
-      updatedAt: "更新于 2026 年 4 月 23 日",
+      updatedAt: "更新于 2026 年 5 月 7 日",
       sections: [
         {
           heading: "网站与下载访问",

@@ -1054,7 +1054,7 @@ img {
   width: 26px;
   height: 30px;
   pointer-events: none;
-  transform: translate(calc(-50% - 14px), -50%);
+  transform: translate(-1px, -1px);
   opacity: 0;
   transition:
     left 0.52s var(--vi-spring),
@@ -1074,7 +1074,10 @@ img {
 
 .vi-orb-jump-cursor-ring {
   position: absolute;
-  inset: -14px;
+  left: -15px;
+  top: -15px;
+  width: 30px;
+  height: 30px;
   border-radius: 999px;
   border: 2px solid rgba(174, 223, 255, 0.72);
   opacity: 0;
@@ -1083,7 +1086,10 @@ img {
 
 .vi-orb-jump-cursor-arrow {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
+  width: 26px;
+  height: 30px;
   clip-path: polygon(4% 3%, 82% 52%, 52% 59%, 66% 94%, 53% 100%, 39% 67%, 13% 86%);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(215, 226, 255, 0.9));
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.42));

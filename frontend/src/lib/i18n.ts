@@ -23,7 +23,7 @@ export function getBaseUrl() {
   }
 
   if (process.env.NODE_ENV === "production") {
-    return "https://codeorb.app";
+    return "https://www.codeorb.app";
   }
 
   return "http://localhost:3003";

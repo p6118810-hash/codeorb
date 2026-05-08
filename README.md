@@ -2,6 +2,8 @@
 
 CodeOrb is an open source workspace for the Codex companion projects in this repository.
 
+Website: https://www.codeorb.app
+
 It currently includes:
 
 - `mobile/` - the macOS menu bar client
