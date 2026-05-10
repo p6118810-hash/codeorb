@@ -14,7 +14,7 @@ struct ProcessingSpinner: View {
     private let symbols = ["·", "✢", "✳", "∗", "✻", "✽"]
     private let color = Color.black.opacity(0.9)
 
-    private let timer = Timer.publish(every: 0.15, on: .main, in: .common).autoconnect()
+    private let timer = Timer.publish(every: 0.6, on: .main, in: .common).autoconnect()
 
     var body: some View {
         Text(symbols[phase % symbols.count])

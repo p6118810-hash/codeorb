@@ -47,6 +47,7 @@ struct NotchView: View {
         case waitingForApproval
         case processing
         case waitingForInput
+        case update
         case idle
     }
 
@@ -86,6 +87,7 @@ struct NotchView: View {
     @State private var cachedCompactActivitySummaries: [CompactActivitySummary] = []
     @State private var cachedCompactActivityStripWidth: CGFloat = 0
     @State private var compactActivityStripCollapsed = false
+    @State private var terminalLabelPrewarmKey = ""
 
     @Namespace private var activityNamespace
     private var waitingForInputVisibilityWindow: TimeInterval {
@@ -282,7 +284,19 @@ struct NotchView: View {
         if hasWaitingForInput {
             return .waitingForInput
         }
+        if shouldShowCompactUpdateStatus {
+            return .update
+        }
         return .idle
+    }
+
+    private var shouldShowCompactUpdateStatus: Bool {
+        switch updateManager.state {
+        case .found, .downloading, .extracting, .readyToInstall, .installing:
+            return true
+        case .idle, .checking, .upToDate, .error:
+            return updateManager.hasUnseenUpdate
+        }
     }
 
     private var compactOrbStatusColor: Color {
@@ -293,6 +307,8 @@ struct NotchView: View {
             return Color.black.opacity(0.9)
         case .waitingForInput:
             return TerminalColors.green
+        case .update:
+            return TerminalColors.blue
         case .idle:
             return Color.white.opacity(0.35)
         }
@@ -306,8 +322,23 @@ struct NotchView: View {
             return "RUN"
         case .waitingForInput:
             return "READY"
+        case .update:
+            return compactUpdateStatusText
         case .idle:
             return "IDLE"
+        }
+    }
+
+    private var compactUpdateStatusText: String {
+        switch updateManager.state {
+        case .downloading(let progress), .extracting(let progress):
+            return "\(Int(progress * 100))%"
+        case .readyToInstall:
+            return "INSTALL"
+        case .installing:
+            return "INSTALL"
+        default:
+            return "NEW APP"
         }
     }
 
@@ -324,6 +355,8 @@ struct NotchView: View {
             return "!"
         case .waitingForInput:
             return "OK"
+        case .update:
+            return "↓"
         case .idle:
             return nil
         }
@@ -337,6 +370,8 @@ struct NotchView: View {
             return Color.black.opacity(0.92)
         case .waitingForInput:
             return TerminalColors.green
+        case .update:
+            return TerminalColors.blue
         case .idle:
             return Color.white.opacity(0.28)
         }
@@ -348,6 +383,8 @@ struct NotchView: View {
             return .white.opacity(0.92)
         case .waitingForInput:
             return .black.opacity(0.88)
+        case .update:
+            return .white.opacity(0.94)
         case .idle:
             return .white.opacity(0.9)
         }
@@ -1563,9 +1600,7 @@ struct NotchView: View {
             sessionMonitor.startMonitoring()
             refreshCompactActivityDisplay()
             updateCompactWindowFootprint()
-            Task(priority: .utility) {
-                await TerminalLocator.shared.prewarmTerminalLabels(for: sessionMonitor.instances)
-            }
+            prewarmTerminalLabelsIfNeeded(for: sessionMonitor.instances)
         }
         .onChange(of: viewModel.status) { oldStatus, newStatus in
             handleStatusChange(from: oldStatus, to: newStatus)
@@ -1578,9 +1613,7 @@ struct NotchView: View {
             handleWaitingForInputChange(instances)
             AutoContinueManager.shared.handleNewWaitingSessions(instances.filter { $0.phase == .waitingForInput })
             refreshCompactActivityDisplay()
-            Task(priority: .utility) {
-                await TerminalLocator.shared.prewarmTerminalLabels(for: instances)
-            }
+            prewarmTerminalLabelsIfNeeded(for: instances)
         }
         .onChange(of: compactActivitySummaries) { _, _ in
             if compactActivitySummaries.isEmpty && compactActivityStripCollapsed {
@@ -1737,15 +1770,9 @@ struct NotchView: View {
             Circle()
                 .fill(compactOrbStatusColor.opacity(0.05))
                 .scaleEffect(0.92)
-                .blur(radius: 10)
 
             Circle()
                 .strokeBorder(orbAccentColor.opacity(0.72), lineWidth: 0.75)
-                .overlay {
-                    Circle()
-                        .strokeBorder(orbAccentColor.opacity(0.08), lineWidth: 1.2)
-                        .blur(radius: 3)
-                }
 
             AgentMascotIcon(
                 kind: .solarSystem,
@@ -1773,9 +1800,30 @@ struct NotchView: View {
                 }
                 .offset(x: 21, y: -21)
             }
+
+            if compactOrbState == .update {
+                Text(compactOrbStatusText)
+                    .font(.system(size: compactOrbStatusText.count > 6 ? 6 : 7, weight: .black, design: .rounded))
+                    .tracking(0.5)
+                    .foregroundColor(.white.opacity(0.94))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.65)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(TerminalColors.blue.opacity(0.96))
+                    )
+                    .overlay {
+                        Capsule(style: .continuous)
+                            .stroke(Color.black.opacity(0.32), lineWidth: 1)
+                    }
+                    .shadow(color: TerminalColors.blue.opacity(0.28), radius: 6, y: 2)
+                    .offset(y: 25)
+            }
         }
         .frame(width: compactOrbVisualDiameter, height: compactOrbVisualDiameter)
-        .shadow(color: orbAccentColor.opacity(isAnyProcessing ? 0.35 : 0.18), radius: 18, y: 8)
+        .shadow(color: orbAccentColor.opacity(isAnyProcessing ? 0.16 : 0.12), radius: isAnyProcessing ? 8 : 12, y: 5)
     }
 
     private func compactActivityStrip(_ summaries: [CompactActivitySummary], overflowCount: Int) -> some View {
@@ -2205,8 +2253,40 @@ struct NotchView: View {
             return
         }
 
+        if shouldHandleCompactUpdateTap {
+            handleCompactUpdateTap()
+            return
+        }
+
         guard !compactActivitySummaries.isEmpty else { return }
         compactActivityStripCollapsed.toggle()
+    }
+
+    private var shouldHandleCompactUpdateTap: Bool {
+        switch updateManager.state {
+        case .found, .readyToInstall:
+            return true
+        case .idle, .upToDate, .error:
+            return updateManager.hasUnseenUpdate
+        case .checking, .downloading, .extracting, .installing:
+            return false
+        }
+    }
+
+    private func handleCompactUpdateTap() {
+        switch updateManager.state {
+        case .found:
+            updateManager.markUpdateSeen()
+            updateManager.downloadAndInstall()
+        case .readyToInstall:
+            updateManager.markUpdateSeen()
+            updateManager.installAndRelaunch()
+        case .idle, .upToDate, .error:
+            updateManager.markUpdateSeen()
+            updateManager.checkForUpdates()
+        default:
+            break
+        }
     }
 
     private func approveMostRecentPendingPermission() {
@@ -2215,6 +2295,23 @@ struct NotchView: View {
             return
         }
         sessionMonitor.approvePermission(sessionId: session.sessionId)
+    }
+
+    private func prewarmTerminalLabelsIfNeeded(for instances: [SessionState]) {
+        let key = instances
+            .compactMap { session -> String? in
+                guard let pid = session.pid else { return nil }
+                return "\(session.provider.rawValue):\(pid):\(session.cwd)"
+            }
+            .sorted()
+            .joined(separator: "|")
+
+        guard key != terminalLabelPrewarmKey else { return }
+        terminalLabelPrewarmKey = key
+
+        Task(priority: .utility) {
+            await TerminalLocator.shared.prewarmTerminalLabels(for: instances)
+        }
     }
 
     /// Determine if notification sound should play for the given sessions
@@ -2244,20 +2341,18 @@ private struct CompactReadyGlowPulse: View {
     @State private var startedAt = Date()
 
     var body: some View {
-        TimelineView(.animation) { timeline in
+        TimelineView(.periodic(from: .now, by: 0.12)) { timeline in
             let elapsed = timeline.date.timeIntervalSince(startedAt)
             ZStack {
-                readyHalo(progress: ringProgress(elapsed: elapsed, delay: 0.0), opacity: 0.88, maxSize: 192)
-                readyHalo(progress: ringProgress(elapsed: elapsed, delay: 0.26), opacity: 0.58, maxSize: 172)
-                readyHalo(progress: ringProgress(elapsed: elapsed, delay: 0.52), opacity: 0.42, maxSize: 152)
+                readyHalo(progress: ringProgress(elapsed: elapsed, delay: 0.0), opacity: 0.56, maxSize: 150)
+                readyHalo(progress: ringProgress(elapsed: elapsed, delay: 0.32), opacity: 0.34, maxSize: 126)
 
                 Circle()
-                    .fill(color.opacity(max(0, 0.58 - ringProgress(elapsed: elapsed, delay: 0.0) * 0.58)))
+                    .fill(color.opacity(max(0, 0.38 - ringProgress(elapsed: elapsed, delay: 0.0) * 0.38)))
                     .frame(width: 10, height: 10)
-                    .blur(radius: 4)
             }
         }
-        .frame(width: 192, height: 192)
+        .frame(width: 150, height: 150)
         .blendMode(.screen)
         .allowsHitTesting(false)
         .onAppear { startedAt = .now }
@@ -2283,7 +2378,6 @@ private struct CompactReadyGlowPulse: View {
                 )
             )
             .frame(width: 10 + eased * (maxSize - 10), height: 10 + eased * (maxSize - 10))
-            .blur(radius: 4 + eased * 10)
     }
 
     private func ringProgress(elapsed: TimeInterval, delay: TimeInterval) -> CGFloat {

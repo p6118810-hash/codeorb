@@ -5,6 +5,7 @@
 //  Header bar for the dynamic island
 //
 
+import Foundation
 import SwiftUI
 
 enum AgentMascotKind {
@@ -52,9 +53,9 @@ struct CodeOrbSolarSystemIcon: View {
     var body: some View {
         Group {
             if animateOrbit {
-                TimelineView(.periodic(from: .now, by: 1.0 / 24.0)) { timeline in
+                TimelineView(.periodic(from: .now, by: orbitFrameInterval)) { timeline in
                     let t = timeline.date.timeIntervalSinceReferenceDate
-                    solarSystemBody(time: t, pulseScale: 0.98 + 0.05 * CGFloat((sin(t * 4.0) + 1) * 0.5))
+                    solarSystemBody(time: t, pulseScale: 1.0)
                 }
             } else {
                 solarSystemBody(time: 0, pulseScale: 1.0)
@@ -69,11 +70,13 @@ struct CodeOrbSolarSystemIcon: View {
         }
     }
 
-    @ViewBuilder
+    private var orbitFrameInterval: TimeInterval {
+        Foundation.ProcessInfo.processInfo.isLowPowerModeEnabled ? (1.0 / 6.0) : (1.0 / 10.0)
+    }
+
     private func solarSystemBody(time: TimeInterval, pulseScale: CGFloat) -> some View {
         let orbitingProviders = Array(planetProviders.prefix(8))
         let sunSize = size * 0.2
-        let innerGlowSize = size * 1.02
         let halfCanvas = size * 0.5
         let totalOrbitSlots = 8
         // Real solar-system semimajor axes in AU, compressed with a log scale so
@@ -95,41 +98,33 @@ struct CodeOrbSolarSystemIcon: View {
             totalSlots: totalOrbitSlots
         )
         let phaseOffsets: [Double] = [-118, 16, 132, 208, 278, 338, 62, 168]
-        let orbitSpeeds: [Double] = [132, 110, 92, 78, 62, 52, 44, 38]
+        let orbitSpeeds: [Double] = [72, 60, 50, 42, 34, 28, 24, 20]
         let sunCore = Color(red: 1.0, green: 0.78, blue: 0.28)
         let sunEdge = Color(red: 1.0, green: 0.48, blue: 0.16)
         let introProgress = orbitIntroProgress(at: time)
         let introOpacity = max(0.0, min(1.0, Double(introProgress * 1.35)))
         let orbitStrokeColor = Color.white.opacity(0.045)
 
-        ZStack {
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            sunEdge.opacity(0.22),
-                            sunEdge.opacity(0.04),
-                            .clear,
-                        ],
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: size * 0.68
-                    )
-                )
-                .frame(width: innerGlowSize, height: innerGlowSize)
-                .blur(radius: size * 0.08)
+        return Canvas(opaque: false, colorMode: .nonLinear, rendersAsynchronously: true) { context, canvasSize in
+            let center = CGPoint(x: canvasSize.width * 0.5, y: canvasSize.height * 0.5)
+            let sunRadius = (sunSize * pulseScale) * 0.5
 
             if !orbitingProviders.isEmpty {
-                ForEach(Array(canonicalOrbitRadii.enumerated()), id: \.offset) { index, radius in
-                    Circle()
-                        .stroke(
-                            orbitStrokeColor,
-                            lineWidth: max(0.25, size * 0.005)
-                        )
-                        .frame(width: radius * 2, height: radius * 2)
+                for radius in canonicalOrbitRadii {
+                    let orbitRect = CGRect(
+                        x: center.x - radius,
+                        y: center.y - radius,
+                        width: radius * 2,
+                        height: radius * 2
+                    )
+                    context.stroke(
+                        Path(ellipseIn: orbitRect),
+                        with: .color(orbitStrokeColor),
+                        lineWidth: max(0.25, size * 0.005)
+                    )
                 }
 
-                ForEach(Array(orbitingProviders.enumerated()), id: \.offset) { index, provider in
+                for (index, provider) in orbitingProviders.enumerated() {
                     let orbitIndex = activeOrbitIndices[index]
                     let radius = canonicalOrbitRadii[orbitIndex]
                     let targetOffset = circularOrbitOffset(
@@ -144,42 +139,68 @@ struct CodeOrbSolarSystemIcon: View {
                         width: entryOffset.width + (targetOffset.width - entryOffset.width) * introProgress,
                         height: entryOffset.height + (targetOffset.height - entryOffset.height) * introProgress
                     )
-
-                    Circle()
-                        .fill(planetColor(for: provider))
-                        .frame(width: planetSizes[index], height: planetSizes[index])
-                        .overlay {
-                            Circle()
-                                .fill(Color.white.opacity(0.52))
-                                .frame(width: planetSizes[index] * 0.28, height: planetSizes[index] * 0.28)
-                                .offset(x: -planetSizes[index] * 0.16, y: -planetSizes[index] * 0.16)
-                        }
-                        .shadow(color: planetColor(for: provider).opacity(0.45), radius: size * 0.1)
-                        .offset(x: planetOffset.width, y: planetOffset.height)
-                        .opacity(introOpacity)
-                        .scaleEffect(0.78 + (0.22 * introProgress))
+                    let planetDiameter = planetSizes[index] * (0.78 + (0.22 * introProgress))
+                    let planetCenter = CGPoint(
+                        x: center.x + planetOffset.width,
+                        y: center.y + planetOffset.height
+                    )
+                    let color = planetColor(for: provider)
+                    let planetRect = CGRect(
+                        x: planetCenter.x - planetDiameter * 0.5,
+                        y: planetCenter.y - planetDiameter * 0.5,
+                        width: planetDiameter,
+                        height: planetDiameter
+                    )
+                    context.opacity = introOpacity
+                    context.fill(Path(ellipseIn: planetRect), with: .color(color))
+                    context.fill(
+                        Path(ellipseIn: CGRect(
+                            x: planetCenter.x - planetDiameter * 0.30,
+                            y: planetCenter.y - planetDiameter * 0.30,
+                            width: planetDiameter * 0.28,
+                            height: planetDiameter * 0.28
+                        )),
+                        with: .color(Color.white.opacity(0.52))
+                    )
+                    context.opacity = 1
                 }
             }
 
-            Circle()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            sunCore,
-                            sunEdge,
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+            let sunRect = CGRect(
+                x: center.x - sunRadius,
+                y: center.y - sunRadius,
+                width: sunRadius * 2,
+                height: sunRadius * 2
+            )
+            context.fill(
+                Path(ellipseIn: CGRect(
+                    x: center.x - sunRadius * 2.0,
+                    y: center.y - sunRadius * 2.0,
+                    width: sunRadius * 4.0,
+                    height: sunRadius * 4.0
+                )),
+                with: .radialGradient(
+                    Gradient(colors: [
+                        sunEdge.opacity(0.32),
+                        sunEdge.opacity(0.06),
+                        .clear,
+                    ]),
+                    center: center,
+                    startRadius: 0,
+                    endRadius: sunRadius * 2.0
                 )
-                .frame(width: sunSize, height: sunSize)
-                .overlay {
-                    Circle()
-                        .stroke(sunEdge.opacity(0.22), lineWidth: max(0.5, size * 0.025))
-                }
-                .scaleEffect(pulseScale)
-                .shadow(color: sunEdge.opacity(0.4), radius: size * 0.12)
+            )
+            context.fill(
+                Path(ellipseIn: sunRect),
+                with: .color(sunCore)
+            )
+            context.stroke(
+                Path(ellipseIn: sunRect),
+                with: .color(sunEdge.opacity(0.42)),
+                lineWidth: max(0.5, size * 0.025)
+            )
         }
+        .frame(width: size, height: size)
     }
 
     private var providerSignature: String {

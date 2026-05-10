@@ -56,7 +56,17 @@ actor SessionTerminalContextResolver {
         )
     }
 
-    nonisolated static func findLiveCodexSessionPid(transcriptPath: String, cwd: String) -> Int? {
+    nonisolated static func findLiveCodexSessionPid(
+        transcriptPath: String,
+        cwd: String,
+        tree providedTree: [Int: ProcessInfo]? = nil
+    ) -> Int? {
+        if let cached = liveCodexPidCache[transcriptPath],
+           Date().timeIntervalSince(cached.checkedAt) < 60,
+           kill(Int32(cached.pid), 0) == 0 {
+            return cached.pid
+        }
+
         let result = ProcessExecutor.shared.runSync("/usr/sbin/lsof", arguments: [
             "-t", transcriptPath
         ])
@@ -65,7 +75,7 @@ actor SessionTerminalContextResolver {
             return nil
         }
 
-        let tree = ProcessTreeBuilder.shared.buildTree()
+        let tree = providedTree ?? ProcessTreeBuilder.shared.buildTree()
         let candidatePids = output
             .components(separatedBy: "\n")
             .compactMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
@@ -78,10 +88,19 @@ actor SessionTerminalContextResolver {
         for pid in candidatePids {
             let workingDirectory = ProcessTreeBuilder.shared.getWorkingDirectory(forPid: pid)
             if workingDirectory == cwd {
+                liveCodexPidCache[transcriptPath] = (pid, Date())
                 return pid
             }
         }
 
-        return candidatePids.first
+        if let pid = candidatePids.first {
+            liveCodexPidCache[transcriptPath] = (pid, Date())
+            return pid
+        }
+
+        liveCodexPidCache.removeValue(forKey: transcriptPath)
+        return nil
     }
 }
+
+private nonisolated(unsafe) var liveCodexPidCache: [String: (pid: Int, checkedAt: Date)] = [:]

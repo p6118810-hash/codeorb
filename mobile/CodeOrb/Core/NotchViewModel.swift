@@ -101,7 +101,6 @@ class NotchViewModel: ObservableObject {
     // MARK: - Private
 
     private var cancellables = Set<AnyCancellable>()
-    private let events = EventMonitors.shared
     private var hoverTimer: DispatchWorkItem?
     private let usesFloatingWindow = true
 
@@ -137,6 +136,7 @@ class NotchViewModel: ObservableObject {
     private func setupEventHandlers() {
         guard !usesFloatingWindow else { return }
 
+        let events = EventMonitors.shared
         events.mouseLocation
             .throttle(for: .milliseconds(50), scheduler: DispatchQueue.main, latest: true)
             .sink { [weak self] location in

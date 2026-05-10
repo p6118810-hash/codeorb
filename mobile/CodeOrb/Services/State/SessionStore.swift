@@ -35,8 +35,9 @@ actor SessionStore {
     /// Periodic status check task
     private var statusCheckTask: Task<Void, Never>?
 
-    /// Status check interval (3 seconds)
-    private let statusCheckIntervalSeconds: UInt64 = 3
+    /// Status check interval. Hook/socket events drive active state updates;
+    /// this periodic pass is only a safety net for stale process metadata.
+    private let statusCheckIntervalSeconds: UInt64 = 45
 
     // MARK: - Published State (for UI)
 
@@ -135,7 +136,12 @@ actor SessionStore {
         }
 
         session.pid = event.pid
-        if let pid = event.pid {
+        if event.tty != nil {
+            // Most hook events already include a TTY. Avoid rebuilding the full
+            // process tree on every activity event; tmux metadata can be
+            // resolved lazily when the user jumps or sends input.
+            session.isInTmux = false
+        } else if let pid = event.pid {
             let tree = ProcessTreeBuilder.shared.buildTree()
             session.isInTmux = ProcessTreeBuilder.shared.isInTmux(pid: pid, tree: tree)
         }
@@ -1380,6 +1386,9 @@ actor SessionStore {
     private func recheckAllSessions() {
         var removedSession = false
         var updatedSession = false
+        let processTree = sessions.values.contains { $0.provider == .codex && $0.transcriptPath != nil }
+            ? ProcessTreeBuilder.shared.buildTree()
+            : [:]
 
         for (sessionId, var session) in Array(sessions) {
             if session.phase == .ended {
@@ -1392,7 +1401,7 @@ actor SessionStore {
             let originalSession = session
 
             if session.provider == .codex, session.transcriptPath != nil {
-                if !refreshLiveCodexSessionMetadata(for: &session) {
+                if !refreshLiveCodexSessionMetadata(for: &session, tree: processTree) {
                     session.phase = retainedPhaseForInactiveCodexSession(session)
                     cancelPendingSync(sessionId: sessionId)
                 }
@@ -1435,12 +1444,16 @@ actor SessionStore {
     }
 
     @discardableResult
-    private func refreshLiveCodexSessionMetadata(for session: inout SessionState) -> Bool {
+    private func refreshLiveCodexSessionMetadata(
+        for session: inout SessionState,
+        tree providedTree: [Int: ProcessInfo]? = nil
+    ) -> Bool {
         guard session.provider == .codex,
               let transcriptPath = session.transcriptPath,
               let pid = SessionTerminalContextResolver.findLiveCodexSessionPid(
                 transcriptPath: transcriptPath,
-                cwd: session.cwd
+                cwd: session.cwd,
+                tree: providedTree
               ) else {
             session.pid = nil
             session.tty = nil
@@ -1448,7 +1461,7 @@ actor SessionStore {
             return false
         }
 
-        let tree = ProcessTreeBuilder.shared.buildTree()
+        let tree = providedTree ?? ProcessTreeBuilder.shared.buildTree()
         session.pid = pid
         session.tty = tree[pid]?.tty ?? session.tty
         session.isInTmux = ProcessTreeBuilder.shared.isInTmux(pid: pid, tree: tree)

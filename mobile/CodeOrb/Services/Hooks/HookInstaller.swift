@@ -102,13 +102,8 @@ struct HookInstaller {
         try? FileManager.default.createDirectory(at: hooksDir, withIntermediateDirectories: true)
 
         if let bundled = Bundle.main.url(forResource: "codeorb-state", withExtension: "py") {
-            try? FileManager.default.removeItem(at: pythonScript)
             try? FileManager.default.removeItem(at: legacyPythonScript)
-            try? FileManager.default.copyItem(at: bundled, to: pythonScript)
-            try? FileManager.default.setAttributes(
-                [.posixPermissions: 0o755],
-                ofItemAtPath: pythonScript.path
-            )
+            copyFileIfChanged(from: bundled, to: pythonScript, permissions: 0o755)
         }
 
         updateHooks(at: CodexPaths.hooksFile)
@@ -117,21 +112,13 @@ struct HookInstaller {
 
     private static func installClaudeHooks() {
         try? FileManager.default.createDirectory(at: claudeHooksDir, withIntermediateDirectories: true)
-        try? claudeHookScriptContents().write(to: claudeHookScriptURL, atomically: true, encoding: .utf8)
-        try? FileManager.default.setAttributes(
-            [.posixPermissions: 0o755],
-            ofItemAtPath: claudeHookScriptURL.path
-        )
+        writeStringIfChanged(claudeHookScriptContents(), to: claudeHookScriptURL, permissions: 0o755)
         updateClaudeHooks(at: claudeSettingsFile)
     }
 
     private static func installGeminiHooks() {
         try? FileManager.default.createDirectory(at: geminiHooksDir, withIntermediateDirectories: true)
-        try? geminiHookScriptContents().write(to: geminiHookScriptURL, atomically: true, encoding: .utf8)
-        try? FileManager.default.setAttributes(
-            [.posixPermissions: 0o755],
-            ofItemAtPath: geminiHookScriptURL.path
-        )
+        writeStringIfChanged(geminiHookScriptContents(), to: geminiHookScriptURL, permissions: 0o755)
         updateGeminiHooks(at: geminiSettingsFile)
     }
 
@@ -212,7 +199,7 @@ struct HookInstaller {
         root["hooks"] = hooks
 
         if let data = try? JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys]) {
-            try? data.write(to: hooksURL)
+            writeDataIfChanged(data, to: hooksURL)
         }
     }
 
@@ -246,7 +233,7 @@ struct HookInstaller {
         }
 
         if let updatedData = try? JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys]) {
-            try? updatedData.write(to: hooksURL)
+            writeDataIfChanged(updatedData, to: hooksURL)
         }
     }
 
@@ -297,17 +284,19 @@ struct HookInstaller {
 
     private static func withCodexHooksEnabled(_ contents: String) -> String {
         var lines = contents.components(separatedBy: "\n")
+        if let legacyIndex = lineIndex(ofKey: "codex_hooks", inSection: "features", lines: lines) {
+            lines.remove(at: legacyIndex)
+        }
 
-        if let featureIndex = lineIndex(ofKey: "codex_hooks", inSection: "features", lines: lines) {
-            if lines[featureIndex].trimmingCharacters(in: .whitespaces) == "codex_hooks = true" {
-                return contents
+        if let featureIndex = lineIndex(ofKey: "hooks", inSection: "features", lines: lines) {
+            if lines[featureIndex].trimmingCharacters(in: .whitespaces) != "hooks = true" {
+                lines[featureIndex] = "hooks = true"
             }
-            lines[featureIndex] = "codex_hooks = true"
             return lines.joined(separator: "\n")
         }
 
         if let sectionRange = sectionRange(named: "features", lines: lines) {
-            lines.insert("codex_hooks = true", at: sectionRange.upperBound)
+            lines.insert("hooks = true", at: sectionRange.upperBound)
             return lines.joined(separator: "\n")
         }
 
@@ -315,17 +304,24 @@ struct HookInstaller {
             lines.append("")
         }
         lines.append("[features]")
-        lines.append("codex_hooks = true")
+        lines.append("hooks = true")
         return lines.joined(separator: "\n")
     }
 
     private static func withoutCodexHooks(_ contents: String) -> String {
         var lines = contents.components(separatedBy: "\n")
-        guard let index = lineIndex(ofKey: "codex_hooks", inSection: "features", lines: lines) else {
+        var removed = false
+        if let index = lineIndex(ofKey: "hooks", inSection: "features", lines: lines) {
+            lines.remove(at: index)
+            removed = true
+        }
+        if let index = lineIndex(ofKey: "codex_hooks", inSection: "features", lines: lines) {
+            lines.remove(at: index)
+            removed = true
+        }
+        guard removed else {
             return contents
         }
-
-        lines.remove(at: index)
 
         if let range = sectionRange(named: "features", lines: lines) {
             let remaining = lines[range.lowerBound + 1..<range.upperBound]
@@ -432,7 +428,7 @@ struct HookInstaller {
         root["hooks"] = hooks
 
         if let data = try? JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys]) {
-            try? data.write(to: settingsURL)
+            writeDataIfChanged(data, to: settingsURL)
         }
     }
 
@@ -461,7 +457,31 @@ struct HookInstaller {
         }
 
         if let updatedData = try? JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys]) {
-            try? updatedData.write(to: settingsURL)
+            writeDataIfChanged(updatedData, to: settingsURL)
+        }
+    }
+
+    private static func copyFileIfChanged(from sourceURL: URL, to destinationURL: URL, permissions: Int) {
+        guard let sourceData = try? Data(contentsOf: sourceURL) else { return }
+        writeDataIfChanged(sourceData, to: destinationURL, permissions: permissions)
+    }
+
+    private static func writeStringIfChanged(_ contents: String, to url: URL, permissions: Int? = nil) {
+        guard let data = contents.data(using: .utf8) else { return }
+        writeDataIfChanged(data, to: url, permissions: permissions)
+    }
+
+    private static func writeDataIfChanged(_ data: Data, to url: URL, permissions: Int? = nil) {
+        if let existing = try? Data(contentsOf: url), existing == data {
+            if let permissions {
+                try? FileManager.default.setAttributes([.posixPermissions: permissions], ofItemAtPath: url.path)
+            }
+            return
+        }
+
+        try? data.write(to: url, options: .atomic)
+        if let permissions {
+            try? FileManager.default.setAttributes([.posixPermissions: permissions], ofItemAtPath: url.path)
         }
     }
 
